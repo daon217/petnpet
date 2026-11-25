@@ -61,7 +61,8 @@ public class AiWalkRestController {
      * 새 기능: 음성으로 "하트 모양 3km" 요청해서 바로 경로 뽑기
      *  - POST /api/map/voice-route  (multipart form, 키 이름 speech)
      */
-    @PostMapping("/voice-route")
+
+    @PostMapping("/api/map/voice-route")
     public VoiceRouteResponse voiceRoute(
             @RequestParam("speech") MultipartFile speech,
             @RequestParam(value = "centerLat", required = false) Double centerLat,

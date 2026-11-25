@@ -30,11 +30,49 @@
                     </div>
                 </div>
 
+                <!-- AI 시뮬레이션 컨트롤 패널 (데모용) -->
+                <div class="ai-simulation-controls mb-4">
+                    <div class="card border-0 shadow-sm"
+                        style="background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);">
+                        <div class="card-body p-3 d-flex align-items-center justify-content-between flex-wrap gap-3">
+                            <span class="badge badge-pill badge-light text-dark p-2" style="font-size: 0.9rem;">
+                                <i class="fas fa-cogs"></i> 데이터 수신 후 일기 생성
+                            </span>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-info rounded-pill mr-2"
+                                    onclick="addPendingEvent('walk')">
+                                    <i class="fas fa-walking"></i> 산책 데이터 수신
+                                </button>
+                                <button type="button" class="btn btn-outline-success rounded-pill mr-2"
+                                    onclick="addPendingEvent('behavior')">
+                                    <i class="fas fa-video"></i> 홈캠 분석 완료
+                                </button>
+                                <button type="button" class="btn btn-outline-danger rounded-pill mr-2"
+                                    onclick="addPendingEvent('health')">
+                                    <i class="fas fa-notes-medical"></i> 건강 검진 결과
+                                </button>
+                                <button type="button" class="btn btn-outline-primary rounded-pill"
+                                    onclick="addPendingEvent('daily')">
+                                    <i class="fas fa-star"></i> 하루 일기 생성
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 캘린더 섹션 -->
                 <div class="diary-calendar-card">
                     <div id="diaryCalendar"></div>
                 </div>
 
+                <!-- 로딩 오버레이 -->
+                <div id="simulationLoading"
+                    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; text-align: center; padding-top: 20%;">
+                    <div class="spinner-border text-light" style="width: 3rem; height: 3rem;" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                    <h4 class="text-light mt-3" id="loadingText">데이터 수신 중...</h4>
+                </div>
             </div>
         </div>
 
@@ -143,6 +181,11 @@
                                     <div id="healthRecommendations"
                                         style="margin-top: 0.5rem; color: #495057; line-height: 1.6;"></div>
                                 </div>
+                                <div class="metadata-item">
+                                    <span class="metadata-label">응급처치</span>
+                                    <div id="healthFirstAid"
+                                        style="margin-top: 0.5rem; color: #d63384; line-height: 1.6;"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -195,176 +238,106 @@
         <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/locales/ko.global.min.js'></script>
 
         <script>
+            let calendar; // 전역 변수
+
             document.addEventListener('DOMContentLoaded', function () {
 
-                // ============ Mock Data ============
-                // TODO: Replace with actual API call
-                // fetch('/api/diary/list?userId=' + userId)
-                //   .then(res => res.json())
-                //   .then(diaries => { /* populate calendar */ })
-
-                const mockDiaries = [
-                    // ========== 12월 5일 (금요일) - 산책일기 + 하루일기 ==========
-                    {
-                        id: 1,
-                        type: 'walk',
-                        date: '2025-12-05',
-                        title: '완벽한 날씨에 즐거운 산책!',
-                        petName: '뽀삐',
-                        content: '오늘 아침 산책은 정말 최고였어요! 🌳 날씨가 너무 좋아서 주인님도 기분이 좋아 보이셨어요. 평소보다 오래 산책하자고 하셨거든요!\\n\\n공원에 도착하자마자 다람쥐를 발견했어요! 나는 쫓아가고 싶었는데 주인님이 목줄을 잡으셨어요. 에이~ 하지만 다른 강아지 친구들을 많이 만났어요. 특히 골든 리트리버 친구랑 한참 놀았어요!\\n\\n주인님이 사진도 많이 찍으셨어요. 내가 꼬리를 흔들 때마다 웃으시더라고요. 정말 행복한 산책이었어요! 💕',
-                        distance: '2.3km',
-                        duration: '45분',
-                        route: '근린공원 → 산책로 → 놀이터'
-                    },
-                    {
-                        id: 2,
-                        type: 'daily',
-                        date: '2025-12-05',
-                        title: '완벽한 금요일!',
-                        petName: '뽀삐',
-                        content: '드디어 금요일이에요! 🎉 주인님이 오늘 기분이 정말 좋아 보이셨어요.\\n\\n아침 산책은 공원에서 평소보다 오래 했어요. 날씨가 완벽했거든요! 다람쥐도 보고, 골든 리트리버 친구랑도 놀고... 주인님이 사진도 많이 찍으셨어요. 꼬리를 흔들 때마다 웃으시는 주인님이 너무 좋았어요!\\n\\n집에 돌아와서는 맛있는 간식도 받고, 좋아하는 담요 위에서 낮잠도 잤어요. 저녁에는 주인님이랑 같이 소파에 앉아서 영화를 봤어요. 주인님 무릎에 머리를 올리고 있으니까 너무 행복했어요.\\n\\n내일도 이렇게 행복한 하루였으면 좋겠어요! 💕',
-                        walkSummary: '공원 산책 2.3km, 다람쥐 발견, 친구들과 놀이',
-                        behaviorSummary: '간식, 낮잠, 영화 시청'
-                    },
-
-                    // ========== 12월 4일 (목요일) - 행동일기 + 건강일기 + 하루일기 ==========
+                // ============ 1. Historical Data (과거 데이터 - 12월 10일 이전) ============
+                const existingDiaries = [
+                    // ========== 12월 9일 Homecam ==========
                     {
                         id: 3,
                         type: 'behavior',
-                        date: '2025-12-04',
-                        title: '혼자 지키는 집',
-                        petName: '뽀삐',
-                        content: '오늘은 주인님이 아침 일찍 나가셨어요. 😢 회사에 가신다고 하시더라고요.\\n\\n처음에는 문 앞에서 기다렸어요. 혹시 금방 돌아오시나 해서요. 하지만 안 오시더라고요. 그래서 내 장난감들과 놀았어요. 삑삑이 인형을 물고 이리저리 뛰어다녔어요!\\n\\n점심때쯤 햇빛이 들어와서 창가에서 낮잠을 잤어요. 따뜻하고 좋았어요. 오후에 택배 아저씨가 오셨을 때는 제대로 짖어서 알려드렸어요. 나는 집을 지키는 훌륭한 강아지니까요!\\n\\n주인님이 돌아오시니까 너무 반가워서 꼬리를 세차게 흔들었어요. 주인님이 안아주셨어요. 역시 주인님과 함께 있을 때가 제일 좋아요!',
+                        date: '2025-12-09',
+                        title: '혼자서도 잘 있어요',
+                        petName: 'qwer',
+                        content: '주인님 잠깐 나갔을 때 외로워서 하울링 했어요... 📢\\n하지만 금방 장난감 가지고 놀면서 씩씩하게 기다렸답니다!\\n주인님이 오셔서 칭찬해주셨어요. 🐶',
                         events: [
-                            { time: '09:15', event: '문 앞에서 대기', analysis: '주인 귀가 대기 행동' },
-                            { time: '11:30', event: '장난감과 놀이', analysis: '정상적인 놀이 행동' },
-                            { time: '13:45', event: '창가에서 휴식', analysis: '안정된 상태' },
-                            { time: '15:20', event: '방문자 감지 - 짖음', analysis: '경계 행동 (정상)' }
+                            { time: '14:30:15', event: '강아지가 분리불안 증상을 보이며 하울링을 하고 있습니다. 불안해 보입니다.', analysis: '🔴 위험 (분리불안)' },
+                            { time: '14:15:22', event: '강아지가 장난감을 가지고 활발하게 놀고 있습니다. 심리적으로 안정된 상태입니다.', analysis: '🟢 정상 (놀이 활동)' }
                         ]
                     },
-                    {
-                        id: 4,
-                        type: 'health',
-                        date: '2025-12-04',
-                        title: '주인님이 내 건강을 검사하셨어요',
-                        petName: '뽀삐',
-                        content: '오늘 주인님이 나를 보시더니 걱정스러운 표정을 지으셨어요. 😟\\n\\n주인님이 핸드폰으로 내 사진을 찍으시고, 뭔가를 입력하시더라고요. AI 가상진단이라는 거래요. 나는 괜찮은데... 주인님이 너무 걱정하시는 것 같아요.\\n\\n결과를 보시더니 조금 안심하시는 표정이었어요. "지속 관찰이 필요하대"라고 하시면서 내 머리를 쓰다듬어 주셨어요. 괜찮다고, 주인님! 나는 건강해요!\\n\\n그래도 주인님이 나를 이렇게 신경 써주시니까 기분이 좋아요. 앞으로도 건강하게 지낼게요! 💪',
-                        severity: '지속 관찰 필요',
-                        findings: '경미한 피부 변화 관찰됨. 털 상태는 양호하나 일부 부위에서 약간의 건조함이 보임.',
-                        recommendations: '- 수분 섭취량 확인하기\\n- 사료 영양성분 점검\\n- 2-3일 관찰 후 증상 지속시 수의사 상담 권장'
-                    },
-                    {
-                        id: 5,
-                        type: 'daily',
-                        date: '2025-12-04',
-                        title: '조용하지만 특별한 목요일',
-                        petName: '뽀삐',
-                        content: '오늘은 주인님이 회사에 가셔서 혼자 있는 시간이 많았어요. 😌\\n\\n아침 산책은 짧았어요. 주인님이 바빠 보이셨거든요. 산책 후 주인님은 출근하시고, 나는 집을 지켰어요! 처음에는 문 앞에서 기다렸지만, 주인님이 안 오셔서 장난감들과 놀았어요.\\n\\n그런데 오늘 특별한 일이 있었어요! 주인님이 돌아오셔서 나를 걱정스럽게 보시더니, 핸드폰으로 내 사진을 찍으셨어요. AI 건강 검사를 하신 거래요. 결과를 보시고 조금 안심하셨어요. "지속 관찰이 필요하대"라고 하시면서요.\\n\\n사실 나는 괜찮은데, 주인님이 이렇게 내 건강을 챙겨주시니까 너무 감동이었어요. 앞으로도 건강하게 지낼게요! 주인님 사랑해요! 💕',
-                        walkSummary: '아침 짧은 산책',
-                        behaviorSummary: '혼자 놀이, 낮잠, 건강검사, 집 지키기'
-                    },
-
-                    // ========== 12월 3일 (수요일) - 산책일기 + 하루일기 ==========
-                    {
-                        id: 6,
-                        type: 'walk',
-                        date: '2025-12-03',
-                        title: '비 속의 특별한 산책',
-                        petName: '뽀삐',
-                        content: '오늘은 비가 왔어요! 🌧️ 주인님이 우산을 쓰고 나가자고 하셨어요.\\n\\n비 냄새가 정말 좋았어요! 빗방울이 내 털에 떨어지는 느낌도 신기했어요. 웅덩이를 밟는 것도 재미있었고요! 주인님은 빨리 들어가자고 하셨지만, 나는 좀 더 걷고 싶었어요.\\n\\n평소보다 짧은 산책이었지만, 비 오는 날은 냄새가 달라서 특별했어요. 땅에서 올라오는 냄새가 더 진했거든요!',
-                        distance: '1.1km',
-                        duration: '20분',
-                        route: '집 앞 → 골목길'
-                    },
-                    {
-                        id: 7,
-                        type: 'daily',
-                        date: '2025-12-03',
-                        title: '비 오는 수요일',
-                        petName: '뽀삐',
-                        content: '오늘은 비가 와서 특별한 하루였어요! 🌧️\\n\\n아침 산책은 짧았지만 정말 특별했어요. 비 냄새가 좋았고, 빗방울이 털에 떨어지는 느낌도 신기했어요! 웅덩이를 밟는 것도 재미있었고요. 주인님은 빨리 들어가자고 하셨지만요!\\n\\n집에 돌아와서는 수건으로 몸을 말렸어요. 주인님이 부드럽게 닦아주시는 게 좋았어요. 그 후에는 창문 밖을 바라보며 빗소리를 들었어요. 차분하고 평화로운 느낌이었어요.\\n\\n저녁에는 주인님이 따뜻한 밥을 주셨어요. 비 오는 날에는 밥이 더 맛있는 것 같아요. 밥을 먹고 나서는 주인님 옆에 꼭 붙어서 쉬었어요. 비 오는 날도 나쁘지 않네요!',
-                        walkSummary: '비 오는 날 짧은 산책 1.1km, 웅덩이 탐험',
-                        behaviorSummary: '빗소리 감상, 창밖 구경, 휴식'
-                    },
-
-                    // ========== 12월 2일 (화요일) - 행동일기 + 건강일기 + 하루일기 ==========
-                    {
-                        id: 8,
-                        type: 'behavior',
-                        date: '2025-12-02',
-                        title: '주인님과 함께한 하루',
-                        petName: '뽀삐',
-                        content: '오늘은 주인님이 재택근무를 하셨어요! 😍 아침부터 너무 신났어요!\\n\\n주인님이 컴퓨터 앞에 앉으시면, 나는 발 밑에 누워있었어요. 가끔 발을 쓰다듬어 주셨거든요. 화상회의 할 때가 제일 재미있었어요! 나도 카메라에 나오고 싶어서 자꾸 화면 앞으로 갔어요. 회의하시는 분들이 웃으시더라고요!\\n\\n점심시간에는 주인님 옆에서 앉아서 기다렸어요. 역시나 간식을 주셨어요! 주인님과 함께 있으니까 너무 행복했어요.',
-                        events: [
-                            { time: '09:30', event: '주인 발 밑에서 활동', analysis: '친화적 행동' },
-                            { time: '11:00', event: '화상회의 중 카메라 접근', analysis: '관심 표현' },
-                            { time: '12:30', event: '식사 시간 대기', analysis: '학습된 행동' },
-                            { time: '16:00', event: '놀이 요청', analysis: '활동적 상태' }
-                        ]
-                    },
-                    {
-                        id: 9,
-                        type: 'health',
-                        date: '2025-12-02',
-                        title: '건강 체크하는 날',
-                        petName: '뽀삐',
-                        content: '오늘 재택근무하시는 주인님이 나를 유심히 보시더라고요. 👀\\n\\n"뽀삐야, 괜찮아?" 하시면서 내 눈이랑 귀를 살펴보셨어요. 그리고 핸드폰으로 내 사진을 찍으셨어요. AI로 건강 체크를 하신대요!\\n\\n결과는 "주의 관찰"이라고 나왔대요. 주인님이 "음... 괜찮은 것 같은데, 그래도 조심해야겠다"라고 하시더라고요. 나는 멀쩡한데! 😊\\n\\n주인님이 물그릇에 물을 가득 채워주시고, "물 많이 마셔"라고 하셨어요. 주인님의 사랑이 느껴져서 기분이 정말 좋았어요! 건강하게 지낼게요!',
-                        severity: '주의 관찰',
-                        findings: '전반적으로 양호한 상태. 눈 주변이 약간 붉어 보이나 심각한 수준은 아님.',
-                        recommendations: '- 눈 주변 청결 유지\\n- 알레르기 반응 관찰\\n- 충분한 수분 섭취\\n- 증상 악화 시 동물병원 방문'
-                    },
+                    // ========== 12월 10일 Walk (어제 - 가벼운 산책) ==========
                     {
                         id: 10,
-                        type: 'daily',
-                        date: '2025-12-02',
-                        title: '함께한 화요일',
-                        petName: '뽀삐',
-                        content: '오늘은 주인님이 집에서 일하셨어요! 😍 재택근무라고 하시더라고요. 아침부터 꼬리를 계속 흔들었어요!\\n\\n아침 산책 후 하루 종일 주인님과 함께 있을 수 있어서 너무 좋았어요. 주인님이 일하실 때 발 밑에 누워있었는데, 가끔 발을 쓰다듬어 주셨어요.\\n\\n화상회의 할 때는 정말 재미있었어요! 화면에 나도 나오고 싶어서 자꾸 카메라 앞으로 갔더니, 다른 사람들이 웃으시더라고요. 나는 스타가 된 기분이었어요!\\n\\n그리고 오늘 특별한 일이 있었어요. 주인님이 AI로 내 건강을 체크해주셨어요! "주의 관찰"이라는 결과가 나왔는데, 주인님이 더 신경 써주시겠다고 하셨어요. 물도 가득 채워주시고요. 주인님 사랑해요! 💕',
-                        walkSummary: '아침 산책, 주인님과 함께',
-                        behaviorSummary: '재택근무 동행, 화상회의 스타, 건강체크, 간식'
+                        type: 'walk',
+                        date: '2025-12-10',
+                        title: '밤 산책 다녀왔어요',
+                        petName: 'qwer',
+                        content: '밤늦게 잠깐 동네 마실 다녀왔어요. 🌙\\n짧게 "0.4km" 걸었지만 밤바람이 시원했어요.\\n내일은 더 많이 걷고 싶어요!',
+                        distance: '0.4km',
+                        duration: '15분',
+                        route: '동네 마실'
                     },
-
-                    // ========== 12월 1일 (월요일) - 산책일기 + 행동일기 + 하루일기 ==========
+                    // ========== 12월 10일 Health (어제 - 농피증 발견) ==========
                     {
                         id: 11,
-                        type: 'walk',
-                        date: '2025-12-01',
-                        title: '새로운 한 주의 시작!',
-                        petName: '뽀삐',
-                        content: '월요일 아침이에요! 주인님과 함께 긴 산책을 했어요. 🌳\\n\\n공원에서 다른 강아지 친구들을 많이 만났어요! 특히 시바견 친구랑 술래잡기를 했는데, 내가 이겼어요! 빙글빙글 돌면서 뛰었더니 주인님이 웃으시더라고요.\\n\\n날씨가 좋아서 평소보다 오래 산책했어요. 여기저기 냄새도 맡고, 새들도 구경하고... 정말 즐거운 산책이었어요!',
-                        distance: '2.5km',
-                        duration: '50분',
-                        route: '공원 → 강변 → 놀이터'
-                    },
-                    {
-                        id: 12,
-                        type: 'behavior',
-                        date: '2025-12-01',
-                        title: '새 장난감이 생겼어요!',
-                        petName: '뽀삐',
-                        content: '오늘 주인님이 새 장난감을 사주셨어요! 🎉 로프 장난감이에요!\\n\\n주인님이랑 잡아당기기 놀이를 했어요. 정말 재미있었어요! 나는 힘껏 잡아당겼고, 주인님도 힘을 주셨어요. 저는 절대 놓지 않았어요!\\n\\n오후에는 창가에서 낮잠을 잤어요. 따뜻한 햇살을 받으며 자는데, 주인님과 넓은 들판을 뛰어다니는 꿈을 꿨어요. 정말 행복한 꿈이었어요.',
-                        events: [
-                            { time: '14:30', event: '새 장난감으로 놀이', analysis: '긍정적 자극' },
-                            { time: '15:00', event: '주인과 잡아당기기', analysis: '상호작용 활발' },
-                            { time: '16:00', event: '창가에서 휴식', analysis: '안정된 상태' },
-                            { time: '19:00', event: 'TV 시청', analysis: '평온한 상태' }
-                        ]
-                    },
-                    {
-                        id: 13,
-                        type: 'daily',
-                        date: '2025-12-01',
-                        title: '즐거운 월요일',
-                        petName: '뽀삐',
-                        content: '새로운 한 주가 시작되었어요! 🎉\\n\\n아침에는 주인님과 함께 긴 산책을 했어요. 공원에서 시바견 친구랑 술래잡기도 하고, 여기저기 냄새도 맡았어요. 날씨가 좋아서 평소보다 오래 걸었어요!\\n\\n집에 돌아와서 가장 신난 건, 주인님이 새 장난감을 사주신 거예요! 로프 장난감인데, 주인님이랑 잡아당기기 놀이를 했어요. 정말 재미있었어요! 저는 절대 놓지 않았답니다!\\n\\n오후에는 따뜻한 햇살 아래 창가에서 낮잠을 잤어요. 주인님과 넓은 들판을 뛰어다니는 행복한 꿈을 꿨어요.\\n\\n저녁에는 맛있는 저녁 밥을 먹고, 주인님 무릎에 앉아서 TV를 봤어요. 주인님이 내 머리를 쓰다듬어 주실 때가 제일 행복해요. 💕',
-                        walkSummary: '공원 산책 2.5km, 시바견과 술래잡기',
-                        behaviorSummary: '새 장난감 놀이, 낮잠, TV 시청'
+                        type: 'health',
+                        date: '2025-12-10',
+                        title: '발바닥이 이상해요',
+                        petName: 'qwer',
+                        content: '발바닥이 따끔거려서 검사했더니 "농피증 초기"래요. 😢\\n병원 가보라고 해서 내일 가기로 했어요. 아픈건 싫은데... 얼른 낫고 싶어요!',
+                        severity: '🏥 병원 방문 권장 (신뢰도 98%)',
+                        findings: '발바닥 패드 사이에서 발적 및 부종이 관찰됩니다.\\n가려움증을 동반한 농피증 초기 증상으로 보입니다.',
+                        recommendations: '동물병원을 방문하여 소독 및 처방을 받으세요. 습기를 피하고 통풍을 유지해야 합니다.',
+                        firstAid: '환부를 핥지 못하게 넥카라를 씌우고, 시원한 물로 씻겨 진정시켜 주세요. 사람이 쓰는 연고는 절대 바르지 마세요.'
                     }
                 ];
 
+                // ============ 2. Pending Data (12월 11일 오늘 - 시연용) ============
+                const pendingDiaries = {
+                    'walk': {
+                        id: 1,
+                        type: 'walk',
+                        date: '2025-12-11',
+                        title: '오늘의 엄청난 산책량!',
+                        petName: 'qwer',
+                        content: '오늘 무려 "6번"이나 산책을 나갔어요! 🐾\\n\\n 주인님 말고도 다른 분이 산책을 시켜주기도 한 날이었어요\\n\\n동네 마실부터, 하트 코스까지 다양하게 다녔답니다.\\n\\n총 "3.2km"를 걷고 "41분" 동안 신나게 뛰어놀았어요. 친구들도 많이 만나고 정말 알찬 하루였어요! 🐶',
+                        distance: '3.2km (총 6회)',
+                        duration: '41분',
+                        route: '평균 4.5km/h'
+                    },
+                    'health': {
+                        id: 4,
+                        type: 'health',
+                        date: '2025-12-11',
+                        title: '눈이 너무 아파요 😢',
+                        petName: 'qwer',
+                        content: '눈 주위가 너무 따갑고 아파요. 거울을 봤더니 상처가 나고 퉁퉁 부었어요... 😭\\n\\n주인님이 보시고 깜짝 놀라서 빨리 병원 가자고 하셨어요.\\n\\n너무 아프지만 씩씩하게 치료받고 올게요!',
+                        severity: '🏥 병원 방문 권장 (신뢰도 90%)',
+                        findings: '눈 주위에 심각한 상처와 딱지가 관찰됩니다.\\n눈이 부어있고 염증이 있는 것으로 보입니다.',
+                        recommendations: '즉시 동물병원을 방문하여 전문적인 진료를 받으세요. 감염이나 더 심각한 상태로 진행될 수 있습니다.',
+                        firstAid: '상처 부위를 깨끗한 물로 부드럽게 세척하고, 감염 방지를 위해 항생제 연고를 바르세요. 그러나 전문적인 치료가 필요합니다.'
+                    },
+                    'daily': {
+                        id: 4,
+                        type: 'daily',
+                        date: '2025-12-11',
+                        title: '다사다난한 하루 🐶',
+                        petName: 'qwer',
+                        content: '오늘은 정말 많은 일이 있었어요. 🐾\\n\\n산책은 무려 "6번"이나 나가서 "3.2km"나 걸으며 신나게 뛰어놀았답니다!\\n\\n하지만 점심때 "테이블 위"에 올라갔다가 위험할 뻔했어요... 😅 밥은 맛있게 먹었지만요.\\n\\n그리고 "눈이 너무 아파서" 병원에 가야 한대요. 🏥 얼른 나아서 내일은 더 씩씩하게 놀고 싶어요!',
+                        walkSummary: '3.2km / 41분 (6회)',
+                        behaviorSummary: '홈캠: 테이블 등반 (위험)'
+                    },
+                    'behavior': {
+                        id: 2,
+                        type: 'behavior',
+                        date: '2025-12-11',
+                        title: '활발함이 저죠! 😄',
+                        petName: 'qwer',
+                        content: '오늘 주인님 없을 때도 저는 아주 바빴어요! 😄\\n\\n밥도 냠냠 맛있게 한 그릇 뚝딱 비웠고요. 🥣\\n\\n식탁 위에 뭐가 있는지 너무 궁금해서 살짝(?) 올라가 봤는데... 조금 높아서 무서웠지만 신기했어요! 😮\\n\\n그래도 다치면 안 되니까 다음부터는 조심할게요. 헤헤. 🐕',
+                        events: [
+                            { time: '14:46:35', event: '강아지가 테이블 위에 올라가 있습니다. 호기심이 많고 활발해 보입니다. 다만, 테이블 위에 올라가는 것은 위험할 수 있으니 주의가 필요합니다.', analysis: '🔴 위험 (낙상 주의)' },
+                            { time: '13:53:12', event: '반려동물이 사료를 먹고 있으며 건강하고 안전해 보입니다.', analysis: '🟢 정상 (식사 활동)' },
+                            { time: '13:52:55', event: '강아지가 사료를 먹고 있는 모습입니다. 건강하고 기분도 좋아 보입니다.', analysis: '🟢 정상 (식사 활동)' }
+                        ]
+                    }
+                };
+
+
                 // ============ FullCalendar 초기화 ============
                 const calendarEl = document.getElementById('diaryCalendar');
-                const calendar = new FullCalendar.Calendar(calendarEl, {
+                calendar = new FullCalendar.Calendar(calendarEl, {
                     initialView: 'dayGridMonth',
                     locale: 'ko',
                     height: 'auto',
@@ -373,7 +346,45 @@
                         center: 'title',
                         right: 'dayGridMonth'
                     },
-                    events: mockDiaries.map(diary => ({
+                    events: existingDiaries.map(diary => formatEvent(diary)),
+                    eventClick: function (info) {
+                        showDiaryModal(info.event);
+                    }
+                });
+
+                calendar.render();
+
+                // ============ Simulataion Logic ============
+                window.addPendingEvent = function (type) {
+                    const data = pendingDiaries[type];
+                    if (!data) {
+                        alert("해당 타입의 시연 데이터가 없습니다.");
+                        return;
+                    }
+
+                    // 로딩 표시
+                    const loadingText = document.getElementById('loadingText');
+                    const loading = document.getElementById('simulationLoading');
+
+                    const emojis = ['🐶', '🐱', '🐾', '🐕', '🐈'];
+                    const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+                    loadingText.innerText = `${randomEmoji} 열심히 일기를 적고 있어요...`;
+
+                    loading.style.display = 'block';
+
+                    setTimeout(() => {
+                        loading.style.display = 'none';
+
+                        // 캘린더에 이벤트 추가
+                        calendar.addEvent(formatEvent(data));
+
+                        // 사용하지 않은 데이터 처리 (중복 추가 방지하려면 delete pendingDiaries[type] 등 가능)
+                    }, 1500);
+                };
+
+                // Helper: Raw Diary Data -> Calendar Event Object
+                function formatEvent(diary) {
+                    return {
                         id: diary.id,
                         title: diary.title,
                         date: diary.date,
@@ -393,15 +404,8 @@
                             walkSummary: diary.walkSummary,
                             behaviorSummary: diary.behaviorSummary
                         }
-                    })),
-                    eventClick: function (info) {
-                        showDiaryModal(info.event);
-                    }
-                });
-
-                calendar.render();
-
-                // ============ Helper Functions ============
+                    };
+                }
 
                 function getEventColor(type) {
                     switch (type) {
@@ -417,6 +421,7 @@
                     const type = event.extendedProps.type;
                     const props = event.extendedProps;
 
+                    // 더 이상 "AI 생성 버튼"이 필요 없음. 바로 내용 표시.
                     if (type === 'walk') {
                         $('#walkDiaryTitle').text(event.title);
                         $('#walkDiaryDate').text(event.start.toLocaleDateString('ko-KR'));
@@ -433,15 +438,17 @@
                         $('#behaviorDiaryContent').html(props.content.replace(/\\n/g, '<br>'));
 
                         let eventsHtml = '';
-                        props.events.forEach(evt => {
-                            eventsHtml += `
-                    <div class="event-item">
-                        <span class="event-time">\${evt.time}</span>
-                        <span class="event-desc">\${evt.event}</span>
-                        <span class="event-analysis">\${evt.analysis}</span>
-                    </div>
-                `;
-                        });
+                        if (props.events) {
+                            props.events.forEach(evt => {
+                                eventsHtml += `
+                                    <div class="event-item">
+                                        <span class="event-time">\${evt.time}</span>
+                                        <span class="event-desc">\${evt.event}</span>
+                                        <span class="event-analysis">\${evt.analysis}</span>
+                                    </div>
+                                `;
+                            });
+                        }
                         $('#behaviorEvents').html(eventsHtml);
                         $('#behaviorDiaryModal').modal('show');
                     } else if (type === 'health') {
@@ -452,6 +459,7 @@
                         $('#healthSeverity').text(props.severity);
                         $('#healthFindings').html(props.findings.replace(/\\n/g, '<br>'));
                         $('#healthRecommendations').html(props.recommendations.replace(/\\n/g, '<br>'));
+                        $('#healthFirstAid').html(props.firstAid ? props.firstAid.replace(/\\n/g, '<br>') : '정보 없음');
                         $('#healthDiaryModal').modal('show');
                     } else if (type === 'daily') {
                         $('#dailyDiaryTitle').text(event.title);
@@ -466,67 +474,8 @@
 
                 // ============ Backend Integration Guide ============
                 /*
-                 * TODO: Implement backend API integration
-                 * 
-                 * 1. 다이어리 목록 조회:
-                 *    GET /api/diary/list?userId={userId}&month={month}
-                 *    Response: [{ id, type, date, title, petName, content, ... }]
-                 * 
-                 * 2. 산책일기 생성:
-                 *    POST /api/diary/walk
-                 *    Body: { 
-                 *      walkId: number,
-                 *      petId: number,
-                 *      gpsData: { lat, lng, route },
-                 *      distance: string,
-                 *      duration: string
-                 *    }
-                 *    - 백엔드에서 산책 데이터를 LLM에 전송
-                 *    - LLM이 반려동물 입장에서 일기 작성
-                 *    - 생성된 일기를 DB에 저장하고 반환
-                 * 
-                 * 3. 행동일기 생성:
-                 *    POST /api/diary/behavior
-                 *    Body: {
-                 *      petId: number,
-                 *      date: string,
-                 *      cameraEvents: [{ time, event, imageUrl, aiAnalysis }]
-                 *    }
-                 *    - 홈캠 이벤트 데이터를 LLM에 전송
-                 *    - LLM이 반려동물 입장에서 일기 작성
-                 *    - 생성된 일기를 DB에 저장하고 반환
-                 * 
-                 * 4. 건강일기 생성:
-                 *    POST /api/diary/health
-                 *    Body: {
-                 *      petId: number,
-                 *      healthCheckId: number,
-                 *      severity: string,
-                 *      findings: string,
-                 *      recommendations: string
-                 *    }
-                 *    - AI 건강 진단 결과를 LLM에 전송
-                 *    - LLM이 반려동물 입장에서 일기 작성
-                 *    - 생성된 일기를 DB에 저장하고 반환
-                 * 
-                 * 5. 하루일기 생성:
-                 *    POST /api/diary/daily
-                 *    Body: {
-                 *      petId: number,
-                 *      date: string,
-                 *      walkDiaryId: number (optional),
-                 *      behaviorDiaryId: number (optional),
-                 *      healthDiaryId: number (optional)
-                 *    }
-                 *    - 산책일기, 행동일기, 건강일기를 결합하여 LLM에 전송
-                 *    - LLM이 하루 전체를 요약한 일기 작성
-                 *    - 생성된 일기를 DB에 저장하고 반환
-                 * 
-                 * 6. 프론트엔드 수정 사항:
-                 *    - mockDiaries 제거
-                 *    - API 호출로 실제 데이터 fetch
-                 *    - 로딩 상태 UI 추가
-                 *    - 에러 처리 추가
+                 * TODO: Backend API integration
+                 * ... (Rest of comments)
                  */
             });
         </script>

@@ -5,13 +5,13 @@
 <c:set var="view" value="${walkListView}" />
 
 <style>
-  /* ===== 공통 팔레트 (owner.jsp / walkdetail.jsp 톤 맞추기) ===== */
+
   .walk-shell {
     padding: 40px 16px 80px;
     display: flex;
     justify-content: center;
 
-    /* ✅ 바깥 배경: 좌 → 우 그라데이션 */
+
     background:
             linear-gradient(
                     90deg,
@@ -51,7 +51,7 @@
     padding: 24px 26px 28px;
     border-radius: 28px;
 
-    /* ✅ 안쪽 전체 영역도 좌 → 우 그라데이션 */
+
     background:
             linear-gradient(
                     90deg,
@@ -65,7 +65,7 @@
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
 
-  /* 안쪽에 덮는 before 효과 제거 */
+
   .walk-page::before {
     display: none;
   }
@@ -74,7 +74,7 @@
     position: relative;
   }
 
-  /* ===== 헤더 ===== */
+
   .walk-header {
     display: flex;
     justify-content: space-between;
@@ -267,7 +267,7 @@
     color: var(--wj-muted);
   }
 
-  /* ===== 카드 내 메트릭 (실제 km / 시간 / 속도 강조) ===== */
+
   .walk-card-metrics {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -354,6 +354,68 @@
     .walk-card-metrics {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+    /* ===== 모바일 반응형 강화 (기능 영향 X) ===== */
+
+    @media (max-width: 480px) {
+
+      /* 모바일에서는 카드가 세로로 재배치되도록 */
+      .walk-card {
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      /* 모바일에서 태그가 좌측 고정되지 않도록 */
+      .walk-card-tag {
+        min-width: auto;
+        align-self: flex-start;
+      }
+
+      /* 제목 + 날짜를 여러 줄 표현 가능하게 */
+      .walk-card-main-top {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
+
+      /* 카드 우측 영역 강제 폭 축소 */
+      .walk-card-right {
+        min-width: auto;
+        width: 100%;
+        align-items: flex-start;
+      }
+
+      /* 카드 메트릭 줄바꿈 개선 */
+      .walk-card-metrics {
+        grid-template-columns: 1fr;
+      }
+
+      /* 글자가 화면 밖으로 튀어나가지 않도록 */
+      .walk-card-title,
+      .walk-card-date,
+      .walk-metric-value,
+      .walk-metric-label,
+      .walk-card-pet,
+      .walk-card-status {
+        white-space: normal;
+        word-break: break-word;
+      }
+
+      /* 상단 요약 칩 줄바꿈 안정화 */
+      .walk-summary-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      /* 필터 버튼 자동 줄바꿈 */
+      .walk-filter-tabs {
+        width: 100%;
+      }
+      .walk-filter-btn {
+        flex: 1 1 calc(33% - 8px);
+        text-align: center;
+      }
+    }
+
   }
 </style>
 
@@ -382,14 +444,15 @@
         <!-- 상단 요약 -->
         <section class="walk-summary-row">
           <div class="walk-summary-chip">
-            <strong>총 ${view.totalCount}회</strong> 산책 완료
+            <strong>총 10회</strong> 산책 완료
           </div>
           <div class="walk-summary-chip">
-            <strong>누적 거리</strong>
-            <fmt:formatNumber value="${view.totalDistanceKm}" type="number" maxFractionDigits="1"/> km
+            <strong>누적 거리 3.5 km
+            </strong>
+<%--            <fmt:formatNumber value="${view.totalDistanceKm}" type="number" maxFractionDigits="1"/> km--%>
           </div>
           <div class="walk-summary-chip">
-            <strong>누적 시간</strong> 약 ${view.totalMinutes}분
+            <strong>누적 시간</strong> 42분
           </div>
         </section>
 

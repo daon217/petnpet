@@ -4,9 +4,10 @@
 <style>
     /* 페이지 전용 스타일 */
     .recommend-container {
+        min-height: calc(100vh - 200px); /* ✅ 높이 통일 */
         max-width: 900px;
-        margin: 3rem auto;
-        padding: 0 1rem;
+        margin: 0 auto;
+        padding: 2rem 1.5rem; /* ✅ 상하 여백 추가 */
     }
     .recommend-header {
         text-align: center;
@@ -110,6 +111,40 @@
         border: 2px solid var(--border-light);
     }
 
+    /* 모바일 반응형 */
+    @media (max-width: 768px) {
+        .recommend-container {
+            padding: 1.5rem 1rem;
+        }
+
+        .upload-area {
+            padding: 1.5rem;
+        }
+
+        .result-section {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .result-card {
+            padding: 1.25rem;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .recommend-container {
+            padding: 1rem;
+        }
+
+        .recommend-header h2 {
+            font-size: 1.5rem;
+        }
+
+        .upload-icon {
+            font-size: 2.5rem;
+        }
+    }
+
     /* 로딩 스피너 */
     .spinner-border {
         display: none;
@@ -120,7 +155,9 @@
     <div class="recommend-container">
         <div class="recommend-header">
             <h2 class="section-title-custom">AI 옷 사이즈 추천</h2>
-            <p class="text-secondary">전신 사진 한 장으로 AI가 신체 치수를 추정하고 맞춤 사이즈를 추천합니다.</p>
+            <p class="text-secondary">전신 사진 한 장으로 AI가 신체 치수를 추정하고 맞춤 사이즈를 추천합니다.<br>
+                정확한 측정을 위해 500ml 물병과 같은 물체와 함께 찍어주세요.</p>
+
         </div>
 
         <div class="pet-card">

@@ -3,12 +3,35 @@
 
         <!-- Link to external CSS -->
         <link rel="stylesheet" href="<c:url value='/css/pet-figure.css'/>">
+        <style>
+            .upload-area,
+            .feature-card {
+                width: 100%;
+                max-width: 100%;
+                box-sizing: border-box;
+            }
+
+            @media (max-width: 480px) {
+                .feature-card {
+                    padding: 16px !important;
+                }
+
+                .upload-area {
+                    padding: 20px !important;
+                    max-width: 100%;
+                }
+
+                #image-preview {
+                    max-height: 280px;
+                }
+            }
+        </style>
 
         <div class="main-container">
             <div class="figure-container">
                 <div class="figure-header">
                     <h2 class="section-title-custom">✨ 나만의 펫 피규어 스튜디오</h2>
-                    <p>사랑스러운 반려동물의 사진을 올려보세요.<br>AI가 마법처럼 특별한 2D 피규어로 만들어드립니다.</p>
+                    <p>사랑스러운 반려동물의 사진을 올려보세요.<br>AI가 마법처럼 특별한 피규어로 만들어드립니다.</p>
                 </div>
 
                 <div class="feature-card">

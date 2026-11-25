@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="edu.sm.app.repository.PetRepository">
+
+    <resultMap id="petMap" type="Pet">
+        <id column="pet_id" property="petId"/>
+        <result column="user_id" property="userId"/>
+        <result column="name" property="name"/>
+        <result column="type" property="type"/>
+        <result column="custom_type" property="customType"/>
+        <result column="breed" property="breed"/>
+        <result column="gender" property="gender"/>
+        <result column="age" property="age"/>
+        <result column="weight" property="weight"/>
+        <result column="photo" property="photo"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="Pet" useGeneratedKeys="true" keyProperty="petId">
+        INSERT INTO pets (user_id, name, type, custom_type, breed, gender, age, weight, photo)
+        VALUES (#{userId}, #{name}, #{type}, #{customType}, #{breed}, #{gender}, #{age}, #{weight}, #{photo})
+    </insert>
+
+    <select id="select" parameterType="Integer" resultMap="petMap">
+        SELECT * FROM pets WHERE pet_id = #{petId}
+    </select>
+
+    <select id="selectAll" resultMap="petMap">
+        SELECT * FROM pets ORDER BY pet_id DESC
+    </select>
+
+    <select id="selectByUserId" parameterType="Integer" resultMap="petMap">
+        SELECT * FROM pets WHERE user_id = #{userId} ORDER BY pet_id ASC
+    </select>
+
+    <update id="update" parameterType="Pet">
+        UPDATE pets SET
+                        name = #{name},
+                        type = #{type},
+                        custom_type = #{customType},
+                        breed = #{breed},
+                        gender = #{gender},
+                        age = #{age},
+                        weight = #{weight},
+                        photo = #{photo},
+                        updated_at = CURRENT_TIMESTAMP
+        WHERE pet_id = #{petId}
+    </update>
+
+    <delete id="delete" parameterType="Integer">
+        DELETE FROM pets WHERE pet_id = #{petId}
+    </delete>
+
+    <select id="countByUserId" parameterType="Integer" resultType="int">
+        SELECT COUNT(*) FROM pets WHERE user_id = #{userId}
+    </select>
+
+</mapper>

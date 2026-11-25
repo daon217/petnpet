@@ -66,10 +66,12 @@ public class PetFigureService {
 
             // Prompt for creating a figure/cutout
             StringBuilder promptBuilder = new StringBuilder();
-            promptBuilder.append("이 반려동물 사진을 바탕으로 '2D 피규어' 스타일의 이미지를 생성해주세요. ");
-            promptBuilder.append("배경은 투명하거나 아주 깔끔한 흰색이어야 하며, 나중에 오려내기 쉽도록 외곽선이 뚜렷하면 좋습니다. ");
-            promptBuilder.append("반려동물의 특징(털 색, 무늬, 표정)을 그대로 유지하면서, 귀엽고 약간은 장난감 같은 느낌의 2D 아트워크로 변환해주세요. ");
-            promptBuilder.append("전신이 다 나와야 하며, 발판이나 스탠드 없이 캐릭터만 깔끔하게 생성해주세요. ");
+            promptBuilder.append("이 반려동물 사진을 바탕으로 '3D 피규어' 스타일의 이미지를 생성해주세요. ");
+            promptBuilder.append("실제 장난감 피규어처럼 보이도록, 플라스틱 재질감과 광택이 있는 매끈한 표면으로 표현해주세요. ");
+            promptBuilder.append("배경은 깔끔한 흰색 또는 스튜디오 조명 배경이어야 하며, 제품 사진처럼 전문적인 조명을 사용해주세요. ");
+            promptBuilder.append("반려동물의 특징(털 색, 무늬, 표정)을 그대로 유지하면서, 귀여운 치비(chibi) 비율로 머리는 크고 몸은 작게 표현해주세요. ");
+            promptBuilder.append("전신이 다 나와야 하며, 흰색 받침대 위에 전시된 것처럼 피규어 느낌이 나도록 생성해주세요. ");
+            promptBuilder.append("실제 수집용 피규어 장난감처럼 입체감과 질감이 살아있어야 합니다. ");
 
             if (StringUtils.hasText(customPrompt)) {
                 promptBuilder.append("\n\n[사용자 추가 요청사항]: ").append(customPrompt);
@@ -96,6 +98,14 @@ public class PetFigureService {
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("contents", List.of(content));
             requestBody.put("generationConfig", generationConfig);
+
+            // Add Safety Settings
+            List<Map<String, String>> safetySettings = List.of(
+                    Map.of("category", "HARM_CATEGORY_HARASSMENT", "threshold", "BLOCK_NONE"),
+                    Map.of("category", "HARM_CATEGORY_HATE_SPEECH", "threshold", "BLOCK_NONE"),
+                    Map.of("category", "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold", "BLOCK_NONE"),
+                    Map.of("category", "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold", "BLOCK_NONE"));
+            requestBody.put("safetySettings", safetySettings);
 
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
             ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
@@ -125,6 +135,11 @@ public class PetFigureService {
                                         }
                                     }
                                 }
+                            }
+                        } else {
+                            if (candidate.containsKey("finishReason")) {
+                                String reason = (String) candidate.get("finishReason");
+                                return "ERROR: AI Generation Refused. Reason: " + reason;
                             }
                         }
                     }
@@ -197,7 +212,8 @@ public class PetFigureService {
             // Let's fail open (allow) to not block users if validation fails technically,
             // or fail closed (deny) to be strict.
             // Given the requirement is to save tokens, failing closed might be safer,
-            // but for UX, maybe fail open? Let's assume fail closed for now to strictly follow "filtering".
+            // but for UX, maybe fail open? Let's assume fail closed for now to strictly
+            // follow "filtering".
             // Actually, if validation fails, we can't be sure. Let's return false.
             return false;
         }
